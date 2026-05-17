@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGER
+  ADMIN
+}
+
+enum GoalStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REWORK
+}
+
+enum Quarter {
+  GOAL_SETTING
+  Q1
+  Q2
+  Q3
+  ANNUAL_REVIEW
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  department   String?
+  managerId    String?
+
+  manager      User?    @relation("ManagerEmployees", fields: [managerId], references: [id])
+  employees    User[]   @relation("ManagerEmployees")
+
+  goals        Goal[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  target      Float
+  achievement Float      @default(0)
+  weightage   Int
+  status      GoalStatus @default(DRAFT)
+  locked      Boolean    @default(false)
+
+  ownerId     String
+  owner       User       @relation(fields: [ownerId], references: [id])
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
