@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { getSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Eye,
@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 
 type DemoRole = "EMPLOYEE" | "MANAGER" | "ADMIN";
+
+const roleDashboard: Record<DemoRole, string> = {
+  ADMIN: "/admin/dashboard",
+  MANAGER: "/manager/dashboard",
+  EMPLOYEE: "/employee/dashboard",
+};
 
 function LoginContent() {
   const router = useRouter();
@@ -55,11 +61,16 @@ function LoginContent() {
     setLoading(true);
     setFormError("");
 
+    const destination =
+      callbackUrl && callbackUrl !== "/"
+        ? callbackUrl
+        : roleDashboard[selectedRole];
+
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
-      callbackUrl,
+      callbackUrl: destination,
     });
 
     setLoading(false);
@@ -69,27 +80,8 @@ function LoginContent() {
       return;
     }
 
-    const session = await getSession();
-    const role = session?.user.role;
-
-    if (result.url && callbackUrl !== "/") {
-      router.push(result.url);
-      return;
-    }
-
-    switch (role) {
-      case "ADMIN":
-        router.push("/admin/dashboard");
-        break;
-      case "MANAGER":
-        router.push("/manager/dashboard");
-        break;
-      case "EMPLOYEE":
-        router.push("/employee/dashboard");
-        break;
-      default:
-        router.push("/");
-    }
+    router.replace(result.url ?? destination);
+    router.refresh();
   }
 
   return (

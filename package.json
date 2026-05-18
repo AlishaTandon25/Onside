@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:prod": "tsx scripts/seed-production.ts",
     "job:check-overdue": "tsx jobs/check-overdue-goals.ts",
     "job:generate-insights": "tsx jobs/generate-ai-insights.ts",
     "job:send-reminders": "tsx jobs/send-reminders.ts"

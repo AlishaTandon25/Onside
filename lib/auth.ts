@@ -12,7 +12,38 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+function normalizeAuthEnvironment() {
+  if (process.env.VERCEL !== "1") {
+    return;
+  }
+
+  process.env.AUTH_TRUST_HOST = process.env.AUTH_TRUST_HOST ?? "true";
+
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+
+  if (!vercelHost) {
+    return;
+  }
+
+  const vercelUrl = `https://${vercelHost}`;
+  const configuredUrl =
+    process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "";
+  const isLocalhostUrl =
+    configuredUrl.includes("localhost") ||
+    configuredUrl.includes("127.0.0.1");
+
+  if (!configuredUrl || isLocalhostUrl) {
+    process.env.AUTH_URL = vercelUrl;
+    process.env.NEXTAUTH_URL = vercelUrl;
+  }
+}
+
+normalizeAuthEnvironment();
+
 const config = {
+  trustHost: true,
+
   session: {
     strategy: "jwt" as const,
   },
@@ -102,13 +133,17 @@ const config = {
   events: {
     async signIn({ user }: { user: User }) {
       if (user?.id) {
-        await prisma.auditLog.create({
-          data: {
-            action: "USER_LOGIN",
-            resource: "SESSION",
-            userId: user.id,
-          }
-        });
+        try {
+          await prisma.auditLog.create({
+            data: {
+              action: "USER_LOGIN",
+              resource: "SESSION",
+              userId: user.id,
+            }
+          });
+        } catch (error) {
+          console.error("[Auth Event] Failed to write login audit log", error);
+        }
       }
     }
   }
