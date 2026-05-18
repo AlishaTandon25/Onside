@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { SignJWT } from "jose";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +34,8 @@ export async function POST(request: Request) {
   try {
     const { role } = await request.json();
 
+    console.log("[Demo Login] Received role:", role);
+
     if (!role || !DEMO_USERS[role as keyof typeof DEMO_USERS]) {
       return NextResponse.json(
         { error: "Invalid role" },
@@ -44,51 +45,49 @@ export async function POST(request: Request) {
 
     const user = DEMO_USERS[role as keyof typeof DEMO_USERS];
 
-    // Create JWT token
-    const secret = new TextEncoder().encode(
-      process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-    );
+    console.log("[Demo Login] Creating demo session for:", user.email);
 
-    const token = await new SignJWT({
-      sub: user.id,
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      departmentId: user.departmentId,
-      managerId: user.managerId,
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setIssuedAt()
-      .setExpirationTime("24h")
-      .sign(secret);
+    // Encode user data as base64 for URL
+    const userData = Buffer.from(JSON.stringify(user)).toString("base64");
 
-    // Set session cookie
-    const cookieStore = await cookies();
-    
-    // NextAuth v5 uses different cookie names based on environment
-    const cookieName = process.env.NODE_ENV === "production" 
-      ? "__Secure-authjs.session-token"
-      : "authjs.session-token";
+    const response = NextResponse.json({
+      success: true,
+      user,
+      // Pass demo session in URL to ensure it's available immediately
+      redirectUrl: `/${role.toLowerCase()}/dashboard?demo=${userData}`,
+    });
 
-    cookieStore.set(cookieName, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+    // Also set cookie for subsequent requests
+    response.cookies.set("demo-session", JSON.stringify(user), {
+      httpOnly: false,
+      secure: false,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24,
       path: "/",
     });
 
-    return NextResponse.json({
-      success: true,
-      user,
-      redirectUrl: `/${role.toLowerCase()}/dashboard`,
-    });
+    return response;
   } catch (error: any) {
     console.error("Demo login error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to create demo session" },
       { status: 500 }
     );
+  }
+}
+
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const demoSession = cookieStore.get("demo-session");
+
+    if (!demoSession) {
+      return NextResponse.json({ session: null });
+    }
+
+    const user = JSON.parse(demoSession.value);
+    return NextResponse.json({ session: user });
+  } catch (error) {
+    return NextResponse.json({ session: null });
   }
 }

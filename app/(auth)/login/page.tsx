@@ -99,6 +99,7 @@ function LoginContent() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ role }),
+        credentials: "include", // Ensure cookies are sent
       });
 
       const data = await response.json();
@@ -109,9 +110,16 @@ function LoginContent() {
         return;
       }
 
-      // Redirect to the appropriate dashboard
-      router.push(data.redirectUrl);
-      router.refresh();
+      // Store demo session in localStorage as backup
+      if (data.user) {
+        localStorage.setItem("demo-session", JSON.stringify(data.user));
+      }
+
+      // Small delay to ensure cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Force full page redirect to ensure cookies are read
+      window.location.href = data.redirectUrl;
     } catch (error) {
       setDemoLoading(null);
       setFormError("Demo login failed. Please try again.");
@@ -337,15 +345,6 @@ function LoginContent() {
                 {loading
                   ? "Signing In..."
                   : "Sign In"}
-              </button>
-
-              {/* Microsoft Sign-In */}
-              <button
-                type="button"
-                disabled={loading || demoLoading !== null}
-                className="w-full rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                Sign in with Microsoft
               </button>
             </form>
 

@@ -22,7 +22,44 @@ function redirectToLogin(request: NextRequest) {
 }
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
+
+  // Handle demo session parameter
+  const demoParam = searchParams.get("demo");
+  if (demoParam) {
+    try {
+      const userData = JSON.parse(Buffer.from(demoParam, "base64").toString());
+      console.log("[Proxy] Setting demo session cookie for:", userData.email);
+      
+      const response = NextResponse.next();
+      response.cookies.set("demo-session", JSON.stringify(userData), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24,
+        path: "/",
+      });
+      
+      // Redirect to clean URL
+      const cleanUrl = new URL(pathname, request.url);
+      return NextResponse.redirect(cleanUrl, { headers: response.headers });
+    } catch (e) {
+      console.error("[Proxy] Error parsing demo param:", e);
+    }
+  }
+
+  // Check for demo session cookie
+  const demoSessionCookie = request.cookies.get("demo-session");
+  if (demoSessionCookie) {
+    try {
+      const demoUser = JSON.parse(demoSessionCookie.value);
+      console.log("[Proxy] Demo session active for:", demoUser.email);
+      // Allow access for demo users
+      return NextResponse.next();
+    } catch (e) {
+      console.error("[Proxy] Error parsing demo session cookie:", e);
+    }
+  }
 
   if (AUTH_PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
