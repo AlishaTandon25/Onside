@@ -115,6 +115,7 @@ const config = {
         token.departmentId = user.departmentId;
         token.managerId = user.managerId;
       }
+      // Token already has the data from demo login or regular login
       return token;
     },
 

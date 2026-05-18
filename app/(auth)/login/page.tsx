@@ -91,46 +91,30 @@ function LoginContent() {
     setDemoLoading(role);
     setFormError("");
 
-    // Get credentials based on role
-    const credentials = {
-      EMPLOYEE: { email: "employee@onside.ai", password: "password123" },
-      MANAGER: { email: "manager@onside.ai", password: "password123" },
-      ADMIN: { email: "admin@onside.ai", password: "password123" },
-    };
-
-    const { email: demoEmail, password: demoPassword } = credentials[role];
-
-    // Update visible form fields so users can see which credentials are being used
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setSelectedRole(role);
-
-    // Determine destination
-    const destination =
-      callbackUrl && callbackUrl !== "/"
-        ? callbackUrl
-        : roleDashboard[role];
-
     try {
-      const result = await signIn("credentials", {
-        email: demoEmail,
-        password: demoPassword,
-        redirect: false,
-        callbackUrl: destination,
+      // Call demo login API that bypasses authentication
+      const response = await fetch("/api/demo/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role }),
       });
 
-      setDemoLoading(null);
+      const data = await response.json();
 
-      if (!result || result.error) {
-        setFormError("Invalid email or password.");
+      if (!response.ok || !data.success) {
+        setDemoLoading(null);
+        setFormError(data.error || "Demo login failed. Please try again.");
         return;
       }
 
-      router.replace(result.url ?? destination);
+      // Redirect to the appropriate dashboard
+      router.push(data.redirectUrl);
       router.refresh();
     } catch (error) {
       setDemoLoading(null);
-      setFormError("Authentication failed. Please try again.");
+      setFormError("Demo login failed. Please try again.");
     }
   }
 
