@@ -15,7 +15,7 @@ const prisma = new PrismaClient({ adapter });
 async function checkUsers() {
   try {
     console.log("🔍 Checking database users...");
-    console.log("📍 Database:", connectionString.substring(0, 50) + "...");
+    console.log("📍 Database:", connectionString?.substring(0, 50) + "...");
     
     const users = await prisma.user.findMany({
       select: {
