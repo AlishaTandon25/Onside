@@ -10,6 +10,8 @@ import {
   Sparkles,
   BarChart3,
   Brain,
+  Users,
+  Shield,
 } from "lucide-react";
 
 type DemoRole = "EMPLOYEE" | "MANAGER" | "ADMIN";
@@ -34,6 +36,7 @@ function LoginContent() {
   const [password, setPassword] = useState("password123");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<DemoRole | null>(null);
   const [formError, setFormError] = useState("");
 
   function selectRole(role: DemoRole) {
@@ -82,6 +85,53 @@ function LoginContent() {
 
     router.replace(result.url ?? destination);
     router.refresh();
+  }
+
+  async function handleDemoLogin(role: DemoRole) {
+    setDemoLoading(role);
+    setFormError("");
+
+    // Get credentials based on role
+    const credentials = {
+      EMPLOYEE: { email: "employee@onside.ai", password: "password123" },
+      MANAGER: { email: "manager@onside.ai", password: "password123" },
+      ADMIN: { email: "admin@onside.ai", password: "password123" },
+    };
+
+    const { email: demoEmail, password: demoPassword } = credentials[role];
+
+    // Update visible form fields so users can see which credentials are being used
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setSelectedRole(role);
+
+    // Determine destination
+    const destination =
+      callbackUrl && callbackUrl !== "/"
+        ? callbackUrl
+        : roleDashboard[role];
+
+    try {
+      const result = await signIn("credentials", {
+        email: demoEmail,
+        password: demoPassword,
+        redirect: false,
+        callbackUrl: destination,
+      });
+
+      setDemoLoading(null);
+
+      if (!result || result.error) {
+        setFormError("Invalid email or password.");
+        return;
+      }
+
+      router.replace(result.url ?? destination);
+      router.refresh();
+    } catch (error) {
+      setDemoLoading(null);
+      setFormError("Authentication failed. Please try again.");
+    }
   }
 
   return (
@@ -297,7 +347,7 @@ function LoginContent() {
               {/* Sign In Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || demoLoading !== null}
                 className="w-full rounded-xl bg-blue-600 text-white py-3 font-semibold hover:bg-blue-700 transition disabled:opacity-50"
               >
                 {loading
@@ -308,11 +358,77 @@ function LoginContent() {
               {/* Microsoft Sign-In */}
               <button
                 type="button"
-                className="w-full rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50"
+                disabled={loading || demoLoading !== null}
+                className="w-full rounded-xl border border-slate-300 py-3 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
                 Sign in with Microsoft
               </button>
             </form>
+
+            {/* Demo Access Section */}
+            <div className="mt-8">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-slate-500 font-medium">
+                    DEMO ACCESS
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                {/* Employee Demo Card */}
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin("EMPLOYEE")}
+                  disabled={loading || demoLoading !== null}
+                  className="group relative flex flex-col items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center mb-2 transition-colors">
+                    <Target className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">
+                    {demoLoading === "EMPLOYEE" ? "Loading..." : "Employee"}
+                  </span>
+                </button>
+
+                {/* Manager Demo Card */}
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin("MANAGER")}
+                  disabled={loading || demoLoading !== null}
+                  className="group relative flex flex-col items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center mb-2 transition-colors">
+                    <Users className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">
+                    {demoLoading === "MANAGER" ? "Loading..." : "Manager"}
+                  </span>
+                </button>
+
+                {/* Admin Demo Card */}
+                <button
+                  type="button"
+                  onClick={() => handleDemoLogin("ADMIN")}
+                  disabled={loading || demoLoading !== null}
+                  className="group relative flex flex-col items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center mb-2 transition-colors">
+                    <Shield className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">
+                    {demoLoading === "ADMIN" ? "Loading..." : "Admin"}
+                  </span>
+                </button>
+              </div>
+
+              <p className="mt-3 text-center text-xs text-slate-500">
+                Click any role to instantly sign in with demo credentials
+              </p>
+            </div>
 
             {/* Footer */}
             <div className="mt-8 text-center text-sm text-slate-500">
