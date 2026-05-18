@@ -51,7 +51,7 @@ export default async function DashboardRouteGroupLayout({
     redirect("/login");
   }
 
-  console.log("[Dashboard Layout] Regular auth session found:", session.user?.email);
+  console.log("[Dashboard Layout] Regular auth session found:", session?.user?.email);
 
   return (
     <DashboardLayout
