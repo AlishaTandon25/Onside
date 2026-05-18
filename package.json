@@ -11,6 +11,7 @@
     "db:seed:prod": "tsx scripts/seed-production.ts",
     "db:check": "tsx scripts/check-users.ts",
     "db:test-auth": "tsx scripts/test-auth.ts",
+    "setup:production": "tsx scripts/setup-production.ts",
     "job:check-overdue": "tsx jobs/check-overdue-goals.ts",
     "job:generate-insights": "tsx jobs/generate-ai-insights.ts",
     "job:send-reminders": "tsx jobs/send-reminders.ts"
