@@ -1,1 +1,5 @@
-export { default } from "../../../manager/settings/integrations/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyEmployeeIntegrationSettingsPage() {
+  redirect("/settings/integrations");
+}

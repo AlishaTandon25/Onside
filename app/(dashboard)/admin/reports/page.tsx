@@ -1,1 +1,5 @@
-export { default } from "../../manager/reports/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyAdminReportsPage() {
+  redirect("/reports");
+}

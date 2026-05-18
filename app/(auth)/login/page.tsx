@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, Suspense } from "react";
+import { getSession, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Eye,
@@ -14,7 +14,7 @@ import {
 
 type DemoRole = "EMPLOYEE" | "MANAGER" | "ADMIN";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -69,7 +69,15 @@ export default function LoginPage() {
       return;
     }
 
-    switch (selectedRole) {
+    const session = await getSession();
+    const role = session?.user.role;
+
+    if (result.url && callbackUrl !== "/") {
+      router.push(result.url);
+      return;
+    }
+
+    switch (role) {
       case "ADMIN":
         router.push("/admin/dashboard");
         break;
@@ -79,6 +87,8 @@ export default function LoginPage() {
       case "EMPLOYEE":
         router.push("/employee/dashboard");
         break;
+      default:
+        router.push("/");
     }
   }
 
@@ -323,5 +333,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -1,1 +1,5 @@
-export { default } from "../../manager/settings/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyEmployeeSettingsPage() {
+  redirect("/settings");
+}

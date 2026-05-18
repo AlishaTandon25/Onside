@@ -13,7 +13,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const adapter = new PrismaPg(connectionString);
+  const adapter = new PrismaPg(connectionString!);
 
   return new PrismaClient({
     adapter,

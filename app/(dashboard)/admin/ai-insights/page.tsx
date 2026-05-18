@@ -1,1 +1,5 @@
-export { default } from "../../manager/ai-insights/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyAdminAiInsightsPage() {
+  redirect("/ai-insights");
+}

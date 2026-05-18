@@ -2,95 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
-type Role = "employee" | "manager" | "admin";
+import { getNavigationForRole } from "@/lib/navigation";
+import type { AppRole } from "@/lib/route-access";
 
 interface AppSidebarProps {
-  role: Role;
+  role: AppRole;
 }
-
-type NavItem = {
-  label: string;
-  icon: string;
-  href: (role: Role) => string;
-};
 
 export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname();
-
-  const items: NavItem[] = [
-    {
-      label: "Dashboard",
-      icon: "dashboard",
-      href: (role) => `/${role}/dashboard`,
-    },
-    {
-      label: "My Goals",
-      icon: "track_changes",
-      href: () => "/employee/goals",
-    },
-    {
-      label: "Goal Creation",
-      icon: "add_circle",
-      href: () => "/employee/goals/new",
-    },
-    {
-      label: "Quarterly Updates",
-      icon: "event_repeat",
-      href: () => "/employee/updates",
-    },
-    {
-      label: "Team Review",
-      icon: "groups",
-      href: () => "/manager/review",
-    },
-    {
-      label: "Shared Goals",
-      icon: "share_reviews",
-      href: () => "/employee/shared-goals",
-    },
-    {
-      label: "Analytics",
-      icon: "insert_chart",
-      href: (role) =>
-        role === "admin"
-          ? "/admin/analytics"
-          : "/manager/analytics",
-    },
-    {
-      label: "Reports",
-      icon: "description",
-      href: (role) =>
-        role === "admin"
-          ? "/admin/reports"
-          : "/manager/reports",
-    },
-    {
-      label: "Audit Trail",
-      icon: "history",
-      href: () => "/admin/audit",
-    },
-    {
-      label: "Notifications",
-      icon: "notifications",
-      href: (role) => `/${role}/notifications`,
-    },
-    {
-      label: "AI Insights",
-      icon: "psychology",
-      href: (role) => `/${role}/ai-insights`,
-    },
-    {
-      label: "Escalations",
-      icon: "priority_high",
-      href: (role) => `/${role}/escalations`,
-    },
-    {
-      label: "Settings",
-      icon: "settings",
-      href: (role) => `/${role}/settings`,
-    },
-  ];
+  const items = getNavigationForRole(role);
 
   return (
     <aside className="hidden md:flex md:flex-col w-[275px] bg-white border-r border-[#d9dee7] shrink-0 sticky top-0 h-screen overflow-y-auto z-50">
@@ -115,7 +36,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-2 py-6 flex flex-col gap-1">
         {items.map((item) => {
-          const href = item.href(role);
+          const href = item.href;
 
           const active =
             pathname === href ||

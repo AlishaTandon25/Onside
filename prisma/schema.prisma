@@ -6,6 +6,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ==========================================
+// Enums
+// ==========================================
+
 enum Role {
   EMPLOYEE
   MANAGER
@@ -15,10 +19,70 @@ enum Role {
 enum GoalStatus {
   DRAFT
   SUBMITTED
+  RETURNED_FOR_REWORK
   APPROVED
   REJECTED
   REWORK
+  LOCKED
+  COMPLETED
 }
+
+enum UnitOfMeasurement {
+  NUMERIC
+  PERCENTAGE
+  TIMELINE
+  ZERO_BASED
+}
+
+enum CalculationType {
+  MIN
+  MAX
+  TIMELINE
+  ZERO
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  ON_TRACK
+  AT_RISK
+  COMPLETED
+}
+
+enum GoalUpdateCadence {
+  WEEKLY
+  QUARTERLY
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  GOAL_ASSIGNED
+  GOAL_UPDATED
+  APPROVAL_REQUIRED
+  ESCALATION
+  SYSTEM
+}
+
+enum EscalationStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum InsightType {
+  RISK
+  OPPORTUNITY
+  ANOMALY
+  SUMMARY
+}
+
+
 
 enum Quarter {
   GOAL_SETTING
@@ -28,36 +92,328 @@ enum Quarter {
   ANNUAL_REVIEW
 }
 
-model User {
+// ==========================================
+// NextAuth Core Models
+// ==========================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
   id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role
-  department   String?
-  managerId    String?
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  manager      User?    @relation("ManagerEmployees", fields: [managerId], references: [id])
-  employees    User[]   @relation("ManagerEmployees")
+  @@index([userId])
+}
 
-  goals        Goal[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================
+// Business Models
+// ==========================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(EMPLOYEE)
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  managerId String?
+  manager   User?   @relation("ManagerEmployees", fields: [managerId], references: [id], onDelete: SetNull)
+  employees User[]  @relation("ManagerEmployees")
+
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+  settings UserSettings?
+
+  // Business relations
+  ownedGoals          Goal[]                  @relation("OwnedGoals")
+  sharedGoals         SharedGoalParticipant[]
+  goalApprovals       GoalApproval[]
+  notifications       Notification[]
+  reportedEscalations Escalation[]            @relation("ReportedEscalations")
+  assignedEscalations Escalation[]            @relation("AssignedEscalations")
+
+  auditLogs           AuditLog[]
+  goalUpdates         GoalUpdate[]
+  checkIns            GoalUpdate[]            @relation("UpdateCheckIns")
+  insights            AIInsight[]
+  reports             Report[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([managerId])
+  @@index([departmentId])
+}
+
+model UserSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationPreferences Json     @default("{}")
+  integrationPreferences  Json     @default("{}")
+  securityPreferences     Json     @default("{}")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model Goal {
-  id          String     @id @default(cuid())
-  title       String
-  description String?
-  target      Float
-  achievement Float      @default(0)
-  weightage   Int
-  status      GoalStatus @default(DRAFT)
-  locked      Boolean    @default(false)
+  id                String            @id @default(cuid())
+  thrustArea        String            @default("General")
+  title             String
+  description       String?
+  unitOfMeasurement UnitOfMeasurement @default(NUMERIC)
+  calculationType   CalculationType   @default(MIN)
+  startValue        Float?
+  targetValue       Float             @default(0)
+  currentValue      Float             @default(0)
+  target            Float             @default(0)
+  achievement       Float             @default(0)
+  progress          Float             @default(0)
+  weightage         Int               @default(10)
+  status            GoalStatus        @default(DRAFT)
+  priority          Priority          @default(MEDIUM)
+  quarter           Quarter           @default(Q1)
+  cycleId           String            @default("2026")
+  startDate         DateTime?
+  dueDate           DateTime?
+  endDate           DateTime?
+  isShared          Boolean           @default(false)
+  isLocked          Boolean           @default(false)
+  locked            Boolean           @default(false)
+  primaryGoalId     String?
+  primaryGoal       Goal?             @relation("LinkedGoals", fields: [primaryGoalId], references: [id], onDelete: SetNull)
+  linkedGoals       Goal[]            @relation("LinkedGoals")
 
-  ownerId     String
-  owner       User       @relation(fields: [ownerId], references: [id])
+  ownerId String
+  owner   User   @relation("OwnedGoals", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  updates           GoalUpdate[]
+  participants      SharedGoalParticipant[] @relation("SharedGoalParticipants")
+  linkedParticipant SharedGoalParticipant?  @relation("SharedGoalLinkedCopy")
+  approvals         GoalApproval[]
+  insights          AIInsight[]
+  escalations       Escalation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([cycleId])
+  @@index([primaryGoalId])
 }
+
+model GoalUpdate {
+  id                 String            @id @default(cuid())
+  goalId             String
+  userId             String
+  cadence            GoalUpdateCadence @default(WEEKLY)
+  previousValue      Float
+  newValue           Float
+  actualAchievement  Float             @default(0)
+  status             ProgressStatus    @default(ON_TRACK)
+  progressPercentage Float             @default(0)
+  computedProgress   Float             @default(0)
+  accomplishments    Json              @default("[]")
+  blockers           Json              @default("[]")
+  nextSteps          Json              @default("[]")
+  comment            String?
+  managerComment     String?
+  checkedInAt        DateTime?
+  checkedInById      String?
+
+  goal        Goal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkedInBy User? @relation("UpdateCheckIns", fields: [checkedInById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([goalId])
+  @@index([userId])
+  @@index([cadence])
+}
+
+model SharedGoalParticipant {
+  id           String  @id @default(cuid())
+  goalId       String
+  userId       String
+  linkedGoalId String? @unique
+  canEdit      Boolean @default(false)
+
+  goal       Goal  @relation("SharedGoalParticipants", fields: [goalId], references: [id], onDelete: Cascade)
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedGoal Goal? @relation("SharedGoalLinkedCopy", fields: [linkedGoalId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([goalId, userId])
+  @@index([userId])
+}
+
+model GoalApproval {
+  id        String     @id @default(cuid())
+  goalId    String
+  managerId String
+  status    GoalStatus
+  comment   String?
+
+  goal    Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  manager User @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+  @@index([managerId])
+}
+
+model AIInsight {
+  id      String      @id @default(cuid())
+  type    InsightType
+  content String      @db.Text
+  goalId  String?
+  userId  String?
+
+  goal Goal? @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+  @@index([userId])
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  message String           @db.Text
+  read    Boolean          @default(false)
+  userId  String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
+
+model Escalation {
+  id          String           @id @default(cuid())
+  title       String
+  description String           @db.Text
+  status      EscalationStatus @default(OPEN)
+
+  reporterId   String
+  assignedToId String?
+  goalId       String?
+
+  reporter   User  @relation("ReportedEscalations", fields: [reporterId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("AssignedEscalations", fields: [assignedToId], references: [id], onDelete: SetNull)
+  goal       Goal? @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reporterId])
+  @@index([assignedToId])
+  @@index([goalId])
+}
+
+
+model Report {
+  id        String       @id @default(cuid())
+  name      String
+  type      ReportType
+  format    ReportFormat
+  status    ReportStatus @default(PENDING)
+  fileData  Bytes?
+  userId    String
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+enum ReportType {
+  GOAL_SUMMARY
+  ANALYTICS
+  AUDIT
+  ESCALATION
+}
+
+enum ReportFormat {
+  EXCEL
+  PDF
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  action     String
+  resource   String
+  resourceId String?
+  details    String? @db.Text
+  userId     String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([resource, resourceId])
+}
+

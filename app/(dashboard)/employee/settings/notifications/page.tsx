@@ -1,1 +1,5 @@
-export { default } from "../../../manager/settings/notifications/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyEmployeeNotificationSettingsPage() {
+  redirect("/settings/notifications");
+}

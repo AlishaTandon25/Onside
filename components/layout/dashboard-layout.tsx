@@ -1,10 +1,19 @@
+"use client";
+
 import { ReactNode } from "react";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { AppSidebar } from "./app-sidebar";
 import { AppHeader } from "./app-header";
+import {
+  getDefaultDashboard,
+  isRouteAllowed,
+  type AppRole,
+} from "@/lib/route-access";
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  role: "employee" | "manager" | "admin";
+  role: AppRole;
   title: string;
   subtitle?: string;
 }
@@ -15,6 +24,21 @@ export function DashboardLayout({
   title,
   subtitle,
 }: DashboardLayoutProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const routeAllowed = isRouteAllowed(role, pathname);
+
+  useEffect(() => {
+    if (!routeAllowed) {
+      router.replace(getDefaultDashboard(role));
+    }
+  }, [pathname, role, routeAllowed, router]);
+
+  if (!routeAllowed) {
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <AppSidebar role={role} />

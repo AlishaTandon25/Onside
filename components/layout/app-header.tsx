@@ -1,7 +1,10 @@
 "use client";
 
+import type { AppRole } from "@/lib/route-access";
+import { UserNav } from "@/components/layout/user-nav";
+
 interface AppHeaderProps {
-  role: "employee" | "manager" | "admin";
+  role: AppRole;
   title?: string;
   subtitle?: string;
 }
@@ -71,9 +74,7 @@ export function AppHeader({
           </button>
 
           {/* Avatar */}
-          <div className="ml-1 w-9 h-9 rounded-full bg-[#2563eb] flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer">
-            U
-          </div>
+          <UserNav />
         </div>
       </div>
     </header>

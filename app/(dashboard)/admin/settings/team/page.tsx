@@ -1,1 +1,5 @@
-export { default } from "../../../manager/settings/team/page";
+import { redirect } from "next/navigation";
+
+export default function LegacyAdminTeamSettingsPage() {
+  redirect("/settings/team");
+}
