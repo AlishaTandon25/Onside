@@ -23,6 +23,12 @@ export default async function DashboardRouteGroupLayout({
   if (demoSession) {
     console.log("[Dashboard Layout] Demo session found:", demoSession.email);
     const role = toAppRole(demoSession.role);
+    
+    if (!role) {
+      console.log("[Dashboard Layout] Invalid demo role, redirecting to login");
+      redirect("/login");
+    }
+    
     return (
       <DashboardLayout
         role={role}
