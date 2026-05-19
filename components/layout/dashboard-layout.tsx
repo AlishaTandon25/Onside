@@ -40,13 +40,13 @@ export function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       <AppSidebar role={role} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader role={role} title={title} subtitle={subtitle} />
 
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-slate-50 dark:bg-slate-900">
           {children}
         </main>
       </div>
