@@ -200,7 +200,7 @@ export default function NewGoalPage() {
               </h3>
 
               <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                FY 2024
+                FY 2026
               </span>
             </div>
 

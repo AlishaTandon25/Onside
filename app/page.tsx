@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
 const logoSrc =
   "https://lh3.googleusercontent.com/aida/ADBb0ujX_dM4o7NUbIQJ25JS7WCatA6qckellrU-o3Via4Nor4_asuA-FVkU9sUaVtMTfuSKBeUqp5NXTKltAxMKL9KpnGXwFtcTgYrOBlhVVgX6BVXXEb-jEpUWoc7upbFXvvH5ZoNrudl06LKEn4ftnXR1UBqo56MPY48Moe_L1_1wVV7T_AqcawQLr7ZS9slzYIMgRC_0w5mSAHkLwyoOF1Gzh3NfoTu8GFBAIdYrTuHh4TQW8vSeKoXAqCM";
@@ -10,8 +14,26 @@ const insightsSrc =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDzxfIa7Ek0eTvvlUenAtkbtLGe-MOnPvk2guy0o9XTb_rKqfxaQFRm2PBmiRGmaZe7SIjWo9wFRi-BIUnhB0CmAWmHjUOjnmDh7vrrdNEbqGu_eoYw6RwNSWGdPiU4XZZ2xHliTdI9z6jg2PMObZ8Mf6B5EWDoFZ5XlOFsMka1kE3HOioQHaLYcra5sMnD1jwNnp4VPdZjwo7RPFrgmdRecdRY5TD2dWhKYzUkI_m_ANSNtqJqJHEl5pzDLZII7eWxgKjeapyAI4Y";
 
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem("landing-theme") as "light" | "dark" | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("landing-theme", newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+  };
   return (
-    <div className="landing-page light bg-background text-on-background font-body-md antialiased pt-20">
+    <div className={`landing-page ${theme} bg-background text-on-background font-body-md antialiased pt-20`}>
       <style>{landingStyles}</style>
       <nav className="bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md fixed top-0 w-full border-b border-outline-variant/30 shadow-sm z-50 transition-all duration-200">
         <div className="flex justify-between items-center h-20 px-gutter max-w-container-max mx-auto">
@@ -48,6 +70,17 @@ export default function HomePage() {
             </li>
           </ul>
           <div className="hidden md:flex gap-4 items-center">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-surface-container-low transition-colors"
+              aria-label="Toggle dark mode"
+            >
+              {mounted && theme === "dark" ? (
+                <Sun className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
+            </button>
             <Link className="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="/login">
               Log In
             </Link>
@@ -226,7 +259,7 @@ export default function HomePage() {
               </span>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              © 2024 Onside. All rights reserved.
+              © 2026 Onside. All rights reserved.
             </p>
           </div>
           <FooterColumn title="Company" items={["About Us", "Careers"]} />
@@ -267,7 +300,7 @@ function FooterColumn({
 const landingStyles = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-.landing-page {
+.landing-page.light {
   --surface-container-low: #f2f4f6;
   --primary-container: #2563eb;
   --inverse-on-surface: #eff1f3;
@@ -316,6 +349,62 @@ const landingStyles = `
   --primary-fixed-dim: #b4c5ff;
   --secondary-container: #dae2fd;
   min-height: 100vh;
+}
+
+.landing-page.dark {
+  --surface-container-low: #1a1c1e;
+  --primary-container: #1e3a8a;
+  --inverse-on-surface: #191c1e;
+  --surface-variant: #2d3133;
+  --inverse-surface: #e0e3e5;
+  --tertiary-fixed: #1e293b;
+  --surface-container: #1e1e1e;
+  --on-primary: #ffffff;
+  --background: #0f1419;
+  --tertiary-fixed-dim: #334155;
+  --primary-fixed: #1e3a8a;
+  --secondary-fixed-dim: #475569;
+  --surface: #0f1419;
+  --on-error-container: #ffdad6;
+  --on-background: #e0e3e5;
+  --surface-bright: #2d3133;
+  --on-tertiary-fixed: #cbd5e1;
+  --surface-container-highest: #2d3133;
+  --secondary: #94a3b8;
+  --surface-dim: #0a0d11;
+  --on-tertiary-container: #1e293b;
+  --on-surface-variant: #cbd5e1;
+  --on-surface: #e0e3e5;
+  --primary: #3b82f6;
+  --surface-container-lowest: #0a0d11;
+  --secondary-fixed: #1e293b;
+  --on-secondary: #ffffff;
+  --on-primary-container: #dbeafe;
+  --on-primary-fixed-variant: #60a5fa;
+  --tertiary: #94a3b8;
+  --on-secondary-fixed: #cbd5e1;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #475569;
+  --error-container: #7f1d1d;
+  --on-error: #ffffff;
+  --surface-tint: #3b82f6;
+  --on-primary-fixed: #dbeafe;
+  --on-secondary-fixed-variant: #94a3b8;
+  --on-tertiary-fixed-variant: #94a3b8;
+  --error: #ef4444;
+  --on-secondary-container: #cbd5e1;
+  --outline-variant: #475569;
+  --surface-container-high: #1e1e1e;
+  --inverse-primary: #1e3a8a;
+  --outline: #64748b;
+  --primary-fixed-dim: #2563eb;
+  --secondary-container: #1e293b;
+  min-height: 100vh;
+}
+
+.landing-page {
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .landing-page, .landing-page .font-body-md, .landing-page .font-body-lg,
@@ -386,4 +475,15 @@ const landingStyles = `
 .landing-page .hover\\:text-primary:hover { color: var(--primary); }
 .landing-page .hover\\:bg-primary-container:hover { background-color: var(--primary-container); }
 .landing-page .hover\\:bg-surface-container-low:hover { background-color: var(--surface-container-low); }
+
+.landing-page.dark .bg-surface\\/80 { background-color: rgb(15 20 25 / 0.8); }
+.landing-page.dark .bg-outline-variant\\/30 { background-color: rgb(71 85 105 / 0.3); }
+.landing-page.dark .text-outline-variant\\/30 { color: rgb(71 85 105 / 0.3); }
+.landing-page.dark .border-outline-variant\\/30 { border-color: rgb(71 85 105 / 0.3); }
+.landing-page.dark .border-outline-variant\\/50 { border-color: rgb(71 85 105 / 0.5); }
+
+/* Smooth transitions for all elements */
+.landing-page * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
 `;

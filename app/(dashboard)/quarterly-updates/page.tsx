@@ -1,13 +1,13 @@
 export default function QuarterlyUpdatesPage() {
   const previousQuarters = [
     {
-      quarter: "Q2 2024",
+      quarter: "Q2 2026",
       status: "Completed",
       summary:
         "Achieved $1.2M vs $1.0M target. Expanded into UK market successfully.",
     },
     {
-      quarter: "Q1 2024",
+      quarter: "Q1 2026",
       status: "Completed",
       summary:
         "Achieved $800k vs $750k target. Foundation laid for enterprise sales team.",
@@ -19,7 +19,7 @@ export default function QuarterlyUpdatesPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Quarterly Updates - Q3 2024
+          Quarterly Updates - Q3 2026
         </h1>
         <p className="mt-2 text-slate-600">
           Record your progress and submit achievement updates for manager review.
@@ -127,7 +127,7 @@ export default function QuarterlyUpdatesPage() {
                 </label>
                 <input
                   type="date"
-                  defaultValue="2024-09-30"
+                  defaultValue="2026-09-30"
                   className="w-full rounded-lg border border-slate-300 bg-white py-2 px-4 text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 />
               </div>

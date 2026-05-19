@@ -1,11 +1,31 @@
+"use client";
+
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+
 export default function AdminDashboardPage() {
-  const departmentPerformance = [
-    { name: "Sales", value: 94, color: "bg-blue-600" },
-    { name: "Engineering", value: 88, color: "bg-blue-500" },
-    { name: "HR", value: 82, color: "bg-cyan-500" },
-    { name: "Finance", value: 79, color: "bg-cyan-400" },
-    { name: "Operations", value: 65, color: "bg-amber-500" },
-  ];
+  const { stats, loading, error } = useDashboardStats();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+        <p className="text-red-600">Error loading dashboard: {error}</p>
+      </div>
+    );
+  }
+
+  const departmentPerformance = stats?.departmentPerformance || [];
+  const recentAudits = stats?.recentAudits || [];
 
   const cycleSteps = [
     {
@@ -34,55 +54,28 @@ export default function AdminDashboardPage() {
     },
   ];
 
-  const auditRows = [
-    {
-      timestamp: "Today, 10:42 AM",
-      user: "Sarah Jenkins",
-      action: "Force Approval",
-      entity: "Goal ID #4928",
-      status: "Success",
-      statusType: "success",
-    },
-    {
-      timestamp: "Today, 09:15 AM",
-      user: "System Auto",
-      action: "Cycle Transition",
-      entity: "Q1 Review → Open",
-      status: "Success",
-      statusType: "success",
-    },
-    {
-      timestamp: "Yesterday, 4:30 PM",
-      user: "Mike Chen",
-      action: "Role Modification",
-      entity: "User ID #882",
-      status: "Logged",
-      statusType: "info",
-    },
-    {
-      timestamp: "Yesterday, 2:05 PM",
-      user: "API Integration",
-      action: "Bulk Sync",
-      entity: "HRIS Data",
-      status: "Partial Fail",
-      statusType: "error",
-    },
-  ];
+  function getColorForProgress(value: number) {
+    if (value >= 90) return "bg-blue-600";
+    if (value >= 80) return "bg-blue-500";
+    if (value >= 70) return "bg-cyan-500";
+    if (value >= 60) return "bg-cyan-400";
+    return "bg-amber-500";
+  }
 
-  const heatmapCells = [
-    "bg-blue-200",
-    "bg-blue-300",
-    "bg-blue-500",
-    "bg-blue-600",
-    "bg-blue-100",
-    "bg-blue-200",
-    "bg-blue-400",
-    "bg-blue-600",
-    "bg-red-200",
-    "bg-red-300",
-    "bg-blue-300",
-    "bg-blue-500",
-  ];
+  function formatTimestamp(date: string | Date) {
+    const d = new Date(date);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
 
   function getStatusClasses(type: string) {
     switch (type) {
@@ -103,17 +96,17 @@ export default function AdminDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Total Employees
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-900">1,240</p>
-          <p className="mt-2 text-sm text-blue-600">+24 this quarter</p>
+          <p className="mt-3 text-4xl font-bold text-slate-900">{stats?.totalUsers || 0}</p>
+          <p className="mt-2 text-sm text-blue-600">Organization-wide</p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Goals Submitted
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-900">88%</p>
+          <p className="mt-3 text-4xl font-bold text-slate-900">{stats?.submissionRate || 0}%</p>
           <p className="mt-2 text-sm text-emerald-600">
-            On Track vs 85% target
+            {stats?.submittedGoals || 0} of {stats?.totalGoals || 0} goals
           </p>
         </div>
 
@@ -121,19 +114,19 @@ export default function AdminDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Approval Rate
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-900">92%</p>
+          <p className="mt-3 text-4xl font-bold text-slate-900">{stats?.approvalRate || 0}%</p>
           <div className="mt-3 h-2 rounded-full bg-slate-200">
-            <div className="h-2 w-[92%] rounded-full bg-blue-600" />
+            <div className="h-2 rounded-full bg-blue-600" style={{ width: `${stats?.approvalRate || 0}%` }} />
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Q1 Completion
+            Avg Completion
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-900">74%</p>
+          <p className="mt-3 text-4xl font-bold text-slate-900">{stats?.avgCompletion || 0}%</p>
           <p className="mt-2 text-sm text-amber-600">
-            Requires attention
+            Across all goals
           </p>
         </div>
 
@@ -141,9 +134,9 @@ export default function AdminDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-red-600">
             Active Escalations
           </p>
-          <p className="mt-3 text-4xl font-bold text-slate-900">12</p>
+          <p className="mt-3 text-4xl font-bold text-slate-900">{stats?.activeEscalations || 0}</p>
           <p className="mt-2 text-sm text-red-600">
-            3 Critical requires action
+            Requires attention
           </p>
         </div>
       </div>
@@ -192,41 +185,52 @@ export default function AdminDashboardPage() {
               </h2>
 
               <div className="space-y-4">
-                {departmentPerformance.map((dept, index) => (
-                  <div key={`${dept.name}-${index}`}>
-                    <div className="mb-1 flex justify-between text-sm text-slate-600">
-                      <span>{dept.name}</span>
-                      <span>{dept.value}%</span>
+                {departmentPerformance.length === 0 ? (
+                  <p className="text-center text-slate-500 py-4">No departments found</p>
+                ) : (
+                  departmentPerformance.map((dept: any) => (
+                    <div key={dept.id}>
+                      <div className="mb-1 flex justify-between text-sm text-slate-600">
+                        <span>{dept.name}</span>
+                        <span>{dept.avgProgress}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-200">
+                        <div
+                          className={`h-2 rounded-full ${getColorForProgress(dept.avgProgress)}`}
+                          style={{ width: `${dept.avgProgress}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 rounded-full bg-slate-200">
-                      <div
-                        className={`h-2 rounded-full ${dept.color}`}
-                        style={{ width: `${dept.value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
-            {/* Submission Heatmap */}
+            {/* Department Stats */}
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-lg font-semibold text-slate-900">
-                Submission Heatmap
+                Department Stats
               </h2>
 
-              <div className="grid grid-cols-4 gap-2">
-                {heatmapCells.map((color, index) => (
-                  <div
-                    key={index}
-                    className={`h-10 rounded ${color}`}
-                  />
-                ))}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Total Departments</span>
+                  <span className="text-lg font-bold text-slate-900">{departmentPerformance.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Total Goals</span>
+                  <span className="text-lg font-bold text-slate-900">{stats?.totalGoals || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Avg Progress</span>
+                  <span className="text-lg font-bold text-slate-900">{stats?.avgCompletion || 0}%</span>
+                </div>
               </div>
 
-              <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                <span>Low</span>
-                <span>High</span>
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="text-xs text-slate-500 text-center">
+                  Organization-wide metrics
+                </div>
               </div>
             </div>
           </div>
@@ -338,34 +342,40 @@ export default function AdminDashboardPage() {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {auditRows.map((row, index) => (
-                <tr
-                  key={`${row.timestamp}-${index}`}
-                  className="hover:bg-slate-50"
-                >
-                  <td className="px-6 py-4 text-slate-500">
-                    {row.timestamp}
-                  </td>
-                  <td className="px-6 py-4 font-medium text-slate-900">
-                    {row.user}
-                  </td>
-                  <td className="px-6 py-4 text-slate-700">
-                    {row.action}
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">
-                    {row.entity}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusClasses(
-                        row.statusType
-                      )}`}
-                    >
-                      {row.status}
-                    </span>
+              {recentAudits.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                    No audit logs found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentAudits.map((audit: any) => (
+                  <tr
+                    key={audit.id}
+                    className="hover:bg-slate-50"
+                  >
+                    <td className="px-6 py-4 text-slate-500">
+                      {formatTimestamp(audit.timestamp)}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      {audit.user}
+                    </td>
+                    <td className="px-6 py-4 text-slate-700">
+                      {audit.action}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {audit.resource} {audit.resourceId ? `#${audit.resourceId.slice(0, 8)}` : ""}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusClasses("success")}`}
+                      >
+                        Logged
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

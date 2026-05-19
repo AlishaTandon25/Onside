@@ -34,9 +34,9 @@ export default function AnalyticsPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1">
             <select className="cursor-pointer border-none bg-transparent py-1 pl-2 pr-8 text-xs font-semibold text-slate-900 focus:ring-0">
-              <option>Q3 2024</option>
-              <option>Q2 2024</option>
-              <option>Q1 2024</option>
+              <option>Q3 2026</option>
+              <option>Q2 2026</option>
+              <option>Q1 2026</option>
             </select>
             <div className="h-4 w-px bg-slate-200" />
             <select className="cursor-pointer border-none bg-transparent py-1 pl-2 pr-8 text-xs font-semibold text-slate-900 focus:ring-0">

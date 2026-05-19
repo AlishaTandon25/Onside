@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:prod": "tsx scripts/seed-production.ts",
+    "db:seed:goals": "tsx scripts/seed-goals.ts",
     "db:check": "tsx scripts/check-users.ts",
     "db:test-auth": "tsx scripts/test-auth.ts",
     "setup:production": "tsx scripts/setup-production.ts",

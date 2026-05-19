@@ -1,39 +1,31 @@
-export default function ManagerDashboardPage() {
-  const heatmapRows = [
-    {
-      initials: "AS",
-      name: "Alice Smith",
-      values: ["Excels", "Excels", "Meets", "On Track"],
-    },
-    {
-      initials: "BJ",
-      name: "Bob Jones",
-      values: ["Meets", "Below", "Meets", "At Risk"],
-    },
-    {
-      initials: "CW",
-      name: "Charlie Ward",
-      values: ["Excels", "Excels", "Excels", "Leading"],
-    },
-  ];
+"use client";
 
-  const approvalRows = [
-    {
-      employee: "David Lee",
-      goal: "Launch Q4 Marketing Campaign",
-      date: "Oct 24, 2023",
-    },
-    {
-      employee: "Emma Davis",
-      goal: "Reduce Server Costs by 15%",
-      date: "Oct 25, 2023",
-    },
-    {
-      employee: "Frank Ocean",
-      goal: "Hire 3 Senior Developers",
-      date: "Oct 26, 2023",
-    },
-  ];
+import { useDashboardStats } from "@/hooks/useDashboardStats";
+
+export default function ManagerDashboardPage() {
+  const { stats, loading, error } = useDashboardStats();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+        <p className="text-red-600">Error loading dashboard: {error}</p>
+      </div>
+    );
+  }
+
+  const teamPerformance = stats?.teamPerformance || [];
+  const goalsForApproval = stats?.goalsForApproval || [];
 
   const departments = [
     { name: "Eng", value: 85, color: "bg-blue-600" },
@@ -42,20 +34,28 @@ export default function ManagerDashboardPage() {
     { name: "Ops", value: 45, color: "bg-slate-400" },
   ];
 
-  function getBadgeClasses(value: string) {
-    switch (value) {
-      case "Excels":
-      case "Leading":
-        return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-      case "Below":
-        return "bg-amber-100 text-amber-700 border border-amber-200";
-      case "At Risk":
-        return "bg-red-100 text-red-700 border border-red-200";
-      case "On Track":
-        return "bg-blue-100 text-blue-700 border border-blue-200";
-      default:
-        return "bg-slate-100 text-slate-600 border border-slate-200";
-    }
+  function getPerformanceBadge(avgProgress: number) {
+    if (avgProgress >= 90) return { label: "Excels", class: "bg-emerald-100 text-emerald-700 border border-emerald-200" };
+    if (avgProgress >= 70) return { label: "On Track", class: "bg-blue-100 text-blue-700 border border-blue-200" };
+    if (avgProgress >= 50) return { label: "Meets", class: "bg-slate-100 text-slate-600 border border-slate-200" };
+    return { label: "At Risk", class: "bg-red-100 text-red-700 border border-red-200" };
+  }
+
+  function getInitials(name: string) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  function formatDate(date: string | Date) {
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }
 
   return (
@@ -74,7 +74,7 @@ export default function ManagerDashboardPage() {
           </div>
 
           <div className="text-5xl font-bold tracking-tight text-slate-900">
-            3
+            {stats?.pendingApprovals || 0}
           </div>
 
           <div className="mt-3 flex items-center gap-1 text-sm text-slate-500">
@@ -95,16 +95,16 @@ export default function ManagerDashboardPage() {
           </div>
 
           <div className="text-5xl font-bold tracking-tight text-slate-900">
-            65%
+            {stats?.teamAvgCompletion || 0}%
           </div>
 
           <div className="mt-4 h-2 w-full rounded-full bg-slate-200">
-            <div className="h-2 w-[65%] rounded-full bg-blue-600" />
+            <div className="h-2 rounded-full bg-blue-600" style={{ width: `${stats?.teamAvgCompletion || 0}%` }} />
           </div>
 
           <div className="mt-2 flex items-center gap-1 text-sm text-emerald-600">
             <span>↗</span>
-            <span>+5% from last month</span>
+            <span>Team average progress</span>
           </div>
         </div>
 
@@ -120,7 +120,7 @@ export default function ManagerDashboardPage() {
           </div>
 
           <div className="text-5xl font-bold tracking-tight text-slate-900">
-            2
+            {stats?.atRiskGoals || 0}
           </div>
 
           <div className="mt-3 flex items-center gap-1 text-sm text-red-600">
@@ -156,36 +156,64 @@ export default function ManagerDashboardPage() {
               </thead>
 
               <tbody>
-                {heatmapRows.map((row) => (
-                  <tr
-                    key={row.name}
-                    className="border-b border-slate-100 hover:bg-slate-50"
-                  >
-                    <td className="py-4 font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
-                          {row.initials}
-                        </div>
-                        {row.name}
-                      </div>
+                {teamPerformance.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                      No team members found
                     </td>
-
-                    {row.values.map((value, index) => (
-                      <td
-                        key={`${row.name}-${index}-${value}`}
-                        className="py-4 px-1 text-center"
-                      >
-                        <div
-                          className={`mx-auto flex h-8 w-full items-center justify-center rounded text-xs font-medium ${getBadgeClasses(
-                            value
-                          )}`}
-                        >
-                          {value}
-                        </div>
-                      </td>
-                    ))}
                   </tr>
-                ))}
+                ) : (
+                  teamPerformance.map((member: any) => {
+                    const badge = getPerformanceBadge(member.avgProgress);
+                    return (
+                      <tr
+                        key={member.userId}
+                        className="border-b border-slate-100 hover:bg-slate-50"
+                      >
+                        <td className="py-4 font-medium text-slate-900">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
+                              {getInitials(member.name || "NA")}
+                            </div>
+                            {member.name}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-1 text-center">
+                          <div
+                            className={`mx-auto flex h-8 w-full items-center justify-center rounded text-xs font-medium ${badge.class}`}
+                          >
+                            {badge.label}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-1 text-center">
+                          <div
+                            className={`mx-auto flex h-8 w-full items-center justify-center rounded text-xs font-medium ${badge.class}`}
+                          >
+                            {badge.label}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-1 text-center">
+                          <div
+                            className={`mx-auto flex h-8 w-full items-center justify-center rounded text-xs font-medium ${badge.class}`}
+                          >
+                            {badge.label}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-1 text-center">
+                          <div
+                            className={`mx-auto flex h-8 w-full items-center justify-center rounded text-xs font-medium ${badge.class}`}
+                          >
+                            {member.avgProgress}%
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -239,7 +267,7 @@ export default function ManagerDashboardPage() {
           </h2>
 
           <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
-            3 Pending
+            {stats?.pendingApprovals || 0} Pending
           </span>
         </div>
 
@@ -263,32 +291,40 @@ export default function ManagerDashboardPage() {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {approvalRows.map((row) => (
-                <tr
-                  key={row.employee}
-                  className="hover:bg-slate-50"
-                >
-                  <td className="px-6 py-4 font-medium text-slate-900">
-                    {row.employee}
-                  </td>
-                  <td className="px-6 py-4 text-slate-700">
-                    {row.goal}
-                  </td>
-                  <td className="px-6 py-4 text-slate-500">
-                    {row.date}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                        Request Rework
-                      </button>
-                      <button className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700">
-                        Approve
-                      </button>
-                    </div>
+              {goalsForApproval.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
+                    No goals pending approval
                   </td>
                 </tr>
-              ))}
+              ) : (
+                goalsForApproval.map((item: any) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-slate-50"
+                  >
+                    <td className="px-6 py-4 font-medium text-slate-900">
+                      {item.owner?.name || "Unknown"}
+                    </td>
+                    <td className="px-6 py-4 text-slate-700">
+                      {item.title}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500">
+                      {formatDate(item.submittedAt)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-2">
+                        <button className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+                          Request Rework
+                        </button>
+                        <button className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-700">
+                          Approve
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

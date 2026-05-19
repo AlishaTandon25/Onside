@@ -38,7 +38,7 @@ export default function AIInsightsPage() {
             </h2>
             <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-500">
               <span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" />
-              Analyzing Q3 2024 Data | All Departments
+              Analyzing Q3 2026 Data | All Departments
             </div>
           </div>
           <button className="rounded-lg border border-transparent p-2 text-slate-500 hover:border-slate-200 hover:bg-slate-50 transition-colors">
