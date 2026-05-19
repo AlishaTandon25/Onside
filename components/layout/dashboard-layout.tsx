@@ -46,7 +46,7 @@ export function DashboardLayout({
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppHeader role={role} title={title} subtitle={subtitle} />
 
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-slate-50 dark:bg-slate-900">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-slate-50 dark:bg-slate-900 pt-20 md:pt-6">
           {children}
         </main>
       </div>
